@@ -82,3 +82,37 @@ h2{font-size:19px;margin:34px 0 8px}
   .content{padding:56px 16px 50px}
   .toc-title{max-width:150px}
 }
+
+/* ---- 刷题交互（错题 / 点选项判题 / 筛选） ---- */
+.rx-toolbar{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 0;margin:6px 0 4px;background:var(--bg);border-bottom:1px solid var(--line)}
+.rx-seg{display:inline-flex;gap:6px}
+.rx-seg input{position:absolute;opacity:0;pointer-events:none}
+.rx-seg label,.rx-toolbar button{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;line-height:1.5}
+.rx-seg label:has(input:checked){background:#eff6ff;border-color:var(--ac);color:var(--ac);font-weight:600}
+.rx-toolbar button:hover,.rx-seg label:hover{border-color:var(--ac)}
+.rx-stat{margin-left:auto;font-size:12.5px;color:var(--dim)}
+.rx-empty{color:var(--dim);text-align:center;padding:30px 0}
+.q.rx-hide{display:none}
+.rx-wrong{margin-left:auto;font-size:13px;color:var(--dim);cursor:pointer;user-select:none}
+.rx-wrong input{vertical-align:-2px;margin-right:4px;accent-color:#dc2626}
+.rx-wrong+.master{margin-left:0}
+.q.is-wrong .rx-wrong{color:#dc2626}
+.opts li.rx-opt{border:1px solid var(--line);border-radius:8px;padding:7px 12px;margin:6px 0;cursor:pointer;transition:background .1s,border-color .1s;-webkit-tap-highlight-color:transparent}
+.opts li.rx-opt:hover{border-color:var(--ac)}
+.opts li.rx-opt.sel{border-color:var(--ac);background:#eff6ff}
+.q.rx-done li.rx-opt{cursor:default}
+.q.rx-done li.rx-opt:hover{border-color:var(--line)}
+.opts li.rx-opt.right{border-color:#16a34a;background:#f0fdf4}
+.opts li.rx-opt.wrong{border-color:#dc2626;background:#fef2f2}
+.opts li.rx-opt.miss{border-color:#16a34a;border-style:dashed}
+.rx-judge{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;min-height:4px}
+.rx-verdict{font-weight:600;font-size:14px}
+.rx-verdict.ok{color:#16a34a}
+.rx-verdict.bad{color:#dc2626}
+.rx-judge button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:2px 12px;font-size:13px;cursor:pointer;color:var(--ink)}
+.rx-judge button:disabled{opacity:.5;cursor:default}
+@media (max-width:920px){
+  .rx-toolbar{top:0;padding-left:84px;flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+  .rx-toolbar::-webkit-scrollbar{display:none}
+  .rx-stat{margin-left:8px}
+}
