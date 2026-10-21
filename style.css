@@ -116,3 +116,16 @@ h2{font-size:19px;margin:34px 0 8px}
   .rx-toolbar::-webkit-scrollbar{display:none}
   .rx-stat{margin-left:8px}
 }
+/* 已做/待做 + 屏蔽已掌握 */
+.bar{position:relative}
+.bar .bar-done{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--ac);opacity:.25;transition:width .3s}
+.bar-fill{position:relative}
+.rx-hm{display:inline-flex;align-items:center;gap:5px;border:1px dashed var(--dim);border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;color:var(--ink);background:#fff;user-select:none;white-space:nowrap;line-height:1.5}
+.rx-hm input{margin:0;accent-color:#16a34a}
+.rx-hm:has(input:checked){border-style:solid;border-color:#16a34a;background:#f0fdf4;color:#16a34a;font-weight:600}
+.rx-donemark{margin-left:auto;font-size:13px;color:var(--dim);cursor:pointer;user-select:none}
+.rx-donemark input{vertical-align:-2px;margin-right:4px;accent-color:var(--ac)}
+.rx-donemark:has(input:disabled){cursor:default;opacity:.75}
+.rx-donemark+.rx-wrong{margin-left:0}
+.rx-stat b{color:var(--ink);font-weight:600}
+.pstat{display:none}@media (max-width:920px){.pstat{display:block;font-size:13px;color:var(--dim);margin:2px 0 10px}.pstat b{color:var(--ink)}.rx-stat{display:none}}
