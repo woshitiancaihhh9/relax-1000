@@ -4,7 +4,7 @@
   var KEYS=((me&&me.getAttribute('data-keys'))||'').split(',').filter(Boolean);
   if(!KEYS.length||!window.fetch)return;
   var API='https://api.github.com',DESC='kaoyan-progress-sync (auto)';
-  var T='gsync.token',G='gsync.gist';
+  var T='gsync.token',G='gsync.gist',BK='gsync.backoff',LAST='gsync.last';
   var LS=window.localStorage,orig=Storage.prototype.setItem;
   var loadedAt=Date.now(),touched=false,pushTimer=null,busy=false,again=false,ui=null,SEP='\u0001';
   function get(k){try{return LS.getItem(k);}catch(e){return null;}}
@@ -39,10 +39,24 @@
     if(body){o.body=JSON.stringify(body);o.headers['Content-Type']='application/json';}
     if(keep&&o.body&&o.body.length<60000)o.keepalive=true;
     return fetch(API+path,o).then(function(r){
-      if(r.status===401)throw new Error('令牌无效或已过期');
-      if(r.status===403||r.status===404)throw new Error('令牌没有 Gist 权限（'+r.status+'）');
-      if(!r.ok)throw new Error('GitHub 返回 '+r.status);
-      return r.status===204?null:r.json();
+      if(r.ok){rawSet(BK,'0');return r.status===204?null:r.json();}
+      return r.text().then(function(t){
+        var msg='';try{msg=JSON.parse(t).message||'';}catch(e){msg=(t||'').slice(0,120);}
+        var h=function(n){return r.headers.get(n);},rem=h('x-ratelimit-remaining'),reset=+h('x-ratelimit-reset')||0,ra=+h('retry-after')||0,sc=h('x-oauth-scopes');
+        if(r.status===401)throw new Error('令牌无效或已过期（401），点这里粘贴新令牌');
+        // 403/429 也可能是 GitHub 限流，不一定是权限问题
+        if(r.status===429||(r.status===403&&(rem==='0'||ra||/rate limit|abuse/i.test(msg)))){
+          var until=ra?Date.now()+ra*1000:(reset?reset*1000:Date.now()+15*60000);
+          if(until<Date.now()+60000)until=Date.now()+60000;
+          rawSet(BK,String(until));
+          throw new Error('GitHub 暂时限流，'+hmOf(until)+' 后自动恢复，本地进度已保存');
+        }
+        if(r.status===403||r.status===404){
+          var why=(sc!=null&&!/\bgist\b/.test(sc))?'令牌没有勾选 gist 权限':'令牌没有 Gist 权限';
+          throw new Error(why+'（'+r.status+(msg?'：'+msg:'')+'）');
+        }
+        throw new Error('GitHub 返回 '+r.status+(msg?'：'+msg:''));
+      });
     });
   }
   function findGist(){
@@ -70,8 +84,10 @@
     return {f:out,m:meta};
   }
   function payload(){var files={};KEYS.forEach(function(k){files[fname(k)]={content:JSON.stringify({v:2,data:jget(k,{}),meta:jget(metaKey(k),{})})};});return files;}
+  function backoff(){var b=+get(BK)||0;return b>Date.now()?b:0;}
+  function due(){return Date.now()-(+get(LAST)||0)>30000;}
   function quickPush(){ // 页面关闭/切走时尽量把未上传的改动发出去
-    if(!token()||!get(G))return;
+    if(!token()||!get(G)||backoff())return;
     if(!KEYS.some(function(k){return get(dirtyKey(k))==='1';}))return;
     clearTimeout(pushTimer);pushTimer=null;
     gh('PATCH','/gists/'+get(G),{files:payload()},true).then(function(){KEYS.forEach(function(k){LS.removeItem(dirtyKey(k));});}).catch(function(){});
@@ -82,6 +98,8 @@
   function sync(){
     if(!token())return Promise.resolve();
     if(busy){again=true;return Promise.resolve();}
+    var bk=backoff();if(bk){status('err','GitHub 暂时限流，'+hmOf(bk)+' 后自动恢复，本地进度已保存');return Promise.resolve();}
+    rawSet(LAST,String(Date.now()));
     busy=true;again=false;status('busy','同步中…');
     var changed=false,needPush=false,g0;
     return findGist().then(function(g){g0=g;
@@ -111,8 +129,9 @@
       if(again)sync();
     }).catch(function(e){busy=false;var net=e instanceof TypeError||/load failed|failed to fetch|networkerror/i.test(e.message);status('err',net?'连不上 GitHub（网络问题），本地进度已保存，每分钟自动重试':e.message);});
   }
+  function hmOf(ts){var d=new Date(ts);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}
   function hm(){var d=new Date();return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}
-  function wake(){if(!token())return;loadedAt=Date.now();touched=false;sync();}
+  function wake(force){if(!token())return;if(force)rawSet(BK,'0');else if(!due())return;loadedAt=Date.now();touched=false;sync();}
 
   // ---- 界面 ----
   var st={s:'off',t:'未开启跨设备同步'};
@@ -137,7 +156,7 @@
     box.appendChild(el('div','color:#555;font-size:13px;margin-bottom:10px',on?'已开启。进度会自动保存到你 GitHub 的私密 Gist，平板、电脑、手机打开时自动拉取最新进度。当前状态：'+st.t:'粘贴一个只有 gist 权限的 GitHub 令牌即可开启。每台设备只需设置一次，三个刷题网站共用。'));
     var a=el('a','display:inline-block;font-size:13px;margin-bottom:8px;color:#2b6cd6','→ 去 GitHub 生成令牌（已勾好 gist 权限）');
     a.href='https://github.com/settings/tokens/new?scopes=gist&description=kaoyan-progress-sync';a.target='_blank';a.rel='noopener';
-    if(!on)box.appendChild(a);
+    if(!on||st.s==='err')box.appendChild(a);
     var inp=el('input','width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ccc;border-radius:8px;font:13px monospace;margin-bottom:10px');
     inp.type='password';inp.placeholder=on?'（如需更换令牌，在此粘贴新令牌）':'ghp_… 粘贴令牌';inp.autocomplete='off';
     box.appendChild(inp);
@@ -146,12 +165,12 @@
     function close(){mask.remove();}
     if(on){
       btn('断开同步',false,function(){if(confirm('断开后本设备不再同步（本地进度保留，云端数据保留）。确定？')){LS.removeItem(T);LS.removeItem(G);status('off','未开启跨设备同步');close();}});
-      btn('立即同步',false,function(){close();wake();});
+      btn('立即同步',false,function(){close();wake(true);});
     }
     btn('关闭',false,close);
     btn(on?'保存新令牌':'开启同步',true,function(){
       var v=inp.value.trim();if(!v){if(on){close();}else inp.focus();return;}
-      rawSet(T,v);LS.removeItem(G);close();wake();
+      rawSet(T,v);LS.removeItem(G);close();wake(true);
     });
     box.appendChild(row);mask.appendChild(box);
     mask.addEventListener('click',function(e){if(e.target===mask)close();});
@@ -161,10 +180,10 @@
     buildUI();
     if(token())sync();
     document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')quickPush();else wake();});
-    window.addEventListener('focus',wake);
-    window.addEventListener('online',wake);
+    window.addEventListener('focus',function(){wake();});
+    window.addEventListener('online',function(){wake();});
     window.addEventListener('pagehide',quickPush);
-    setInterval(function(){if(document.visibilityState==='visible'&&token()&&!busy)sync();},60000);
+    setInterval(function(){if(document.visibilityState==='visible'&&token()&&!busy&&due())sync();},120000);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
