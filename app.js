@@ -20,6 +20,15 @@
   window.addEventListener('resize',syncAria);syncAria();
   var cur=document.querySelector('.toc-ch.current');if(cur&&cur.scrollIntoView)cur.scrollIntoView({block:'center'});
 
+  // 在所有章节页展示全站进度，使用目录中的章节总数，不改变已有存储格式。
+  var side=document.querySelector('.sidebar'),sideNav=side&&side.querySelector('.toc');
+  var sumTotal=0;
+  if(sideNav){
+    sideNav.querySelectorAll('.toc-ch[data-ch][data-total]').forEach(function(el){sumTotal+=+el.getAttribute('data-total')||0;});
+    var summary=document.createElement('section');summary.className='rx-allprog';summary.setAttribute('aria-label','全部题目进度');
+    summary.innerHTML='<div class="rx-all-title">全部题目 <strong data-rx-total></strong></div><div class="rx-all-counts" data-rx-counts></div><span class="bar rx-all-bar"><span class="bar-fill" data-rx-mastered-bar></span></span><div class="rx-all-caption">浅色：已做 · 深色：已掌握</div>';
+    side.insertBefore(summary,sideNav);
+  }
   // ---- 进度统计 ----
   function cnt(map,ch){var p=ch+'q',n=0;for(var k in map)if(map[k]&&k.indexOf(p)===0&&/^\d+$/.test(k.slice(p.length)))n++;return n;}
   function all(map){var n=0;for(var k in map)if(map[k])n++;return n;}
@@ -36,6 +45,12 @@
     if(at){var t=+at.getAttribute('data-all-total')||0,d=all(M),dn=Math.min(cntDone(null),t);
       var p=document.querySelector('[data-all-prog]');if(p)p.textContent='已做 '+dn+'/'+t+' · 待做 '+(t-dn)+' · 已掌握 '+d+' · 错题 '+all(W);
       var b=document.querySelector('[data-all-bar]');if(b)b.style.width=(t?(d*100/t).toFixed(1):0)+'%';dbar(b,t?(dn*100/t).toFixed(1):0);}
+    var summary=document.querySelector('.rx-allprog');
+    if(summary){var total=sumTotal, completed=Math.min(cntDone(null),total), mastered=all(M), wrong=all(W);
+      summary.querySelector('[data-rx-total]').textContent=total+' 题';
+      summary.querySelector('[data-rx-counts]').textContent='已做 '+completed+' / '+total+' · 待做 '+(total-completed)+' · 已掌握 '+mastered+' · 错题 '+wrong;
+      var sb=summary.querySelector('[data-rx-mastered-bar]');sb.style.width=(total?Math.min(mastered*100/total,100).toFixed(1):0)+'%';dbar(sb,total?(completed*100/total).toFixed(1):0);
+    }
     var st=document.getElementById('rx-stat');
     if(st){var qs=document.querySelectorAll('article.q'),m=0,w=0,dn=0;qs.forEach(function(a){var id=a._qid;if(M[id])m++;if(W[id])w++;if(done(id))dn++;});
       st.innerHTML='已做 <b>'+dn+'</b>/'+qs.length+' · 待做 <b>'+(qs.length-dn)+'</b> · 已掌握 '+m+' · 错题 '+w;var ps=document.getElementById('pstat');if(ps)ps.innerHTML='本页 '+st.innerHTML;}

@@ -129,3 +129,34 @@ h2{font-size:19px;margin:34px 0 8px}
 .rx-donemark+.rx-wrong{margin-left:0}
 .rx-stat b{color:var(--ink);font-weight:600}
 .pstat{display:none}@media (max-width:920px){.pstat{display:block;font-size:13px;color:var(--dim);margin:2px 0 10px}.pstat b{color:var(--ink)}.rx-stat{display:none}}
+
+/* 全站学习进度：每个章节共用原有进度数据 */
+.rx-allprog{padding:12px 6px 14px;margin:0 0 10px;border-bottom:1px solid var(--line);font-size:13px;color:var(--dim)}
+.rx-all-title{display:flex;justify-content:space-between;align-items:center;color:var(--ink);font-weight:600;font-size:14px}
+.rx-all-title strong{font-size:13px;color:var(--dim)}
+.rx-all-counts{line-height:1.6;margin:6px 0}
+.rx-all-bar{height:6px;margin:6px 0}
+.rx-all-caption{font-size:12px;line-height:1.5}
+@media (prefers-color-scheme:dark){
+  :root{color-scheme:dark;--bg:#15171b;--ink:#e3e5e8;--dim:#a8adb6;--line:#393e47;--ac:#8ab6fa}
+  .sidebar{background:#1e2126}
+  .toc-ch:hover,.toc-row:hover{background:#292e36}
+  .toc-ch.current,.chunks span,.rx-seg label:has(input:checked),.opts li.rx-opt.sel{background:#22324b;color:var(--ac)}
+  .chunks span{border-color:#426497}
+  .chapter-note,.modified-tag,.errata-fix,.errata-note{background:#392d20;color:#f2c184;border-color:#79613d}
+  .q.mastered,.opts li.rx-opt.right,.rx-hm:has(input:checked){background:#1d3528}
+  .opts li.rx-opt.wrong{background:#3d2423}
+  .ch-done .toc-meta,.rx-verdict.ok,.rx-hm:has(input:checked){color:#79d6a0}
+  .q.is-wrong .rx-wrong,.rx-verdict.bad{color:#ff9994}
+  .ans{background:#1e2126}.expl{color:#d0d4dc}.src{color:#a8adb6}
+  .menu-btn,.reset,.rx-seg label,.rx-toolbar button,.rx-hm,.rx-judge button{background:#1e2126;color:var(--ink)}
+  .fig{background:#fff}
+}
+@media (max-width:600px){.toc-row{flex-wrap:wrap;gap:4px 10px}.toc-row .toc-title{flex:1;white-space:normal;min-width:0}.toc-row .bar{flex:0 0 100%}.q-head{flex-wrap:wrap;gap:8px}.rx-donemark{margin-left:auto}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;scroll-behavior:auto!important}}
+/* 避免长章节名和进度数字在侧栏挤在一起 */
+.sidebar .toc-ch{display:flex;align-items:center;flex-wrap:wrap;gap:0 6px}
+.sidebar .toc-ch .toc-title{flex:1;min-width:0;max-width:none}
+.sidebar .toc-ch .toc-meta{float:none;flex:none;white-space:nowrap}
+.sidebar .toc-ch .bar{flex:0 0 100%}
+@media (max-width:600px){.h-sub{display:block;margin-left:0;line-height:1.5}}
